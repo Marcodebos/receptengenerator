@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recepten Generator 🍽️</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    :root {
+      --groen:        #16a34a;
+      --groen-donker: #15803d;
+      --groen-pale:   #f0fdf4;
+      --groen-mid:    #bbf7d0;
+      --tekst:        #111827;
+      --tekst-zacht:  #6b7280;
+      --wit:          #ffffff;
+      --achtergrond:  #f9fafb;
+      --kaart:        #ffffff;
+      --rand:         #e5e7eb;
+      --radius:       16px;
+      --schaduw:      0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+      --schaduw-hover:0 4px 12px rgba(0,0,0,.10), 0 12px 32px rgba(0,0,0,.08);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--achtergrond);
+      min-height: 100vh;
+      color: var(--tekst);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: var(--groen);
+      color: var(--wit);
+      padding: 1.25rem 1.5rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(0,0,0,.15);
+    }
+    .header-links { display: flex; align-items: center; gap: .5rem; }
+    .header-titel { font-size: 1.1rem; font-weight: 800; }
+    .header-sub { font-size: .75rem; opacity: .75; margin-top: .1rem; }
+    .instellingen-btn {
+      background: rgba(255,255,255,.18);
+      border: 1px solid rgba(255,255,255,.3);
+      color: var(--wit);
+      border-radius: 50%;
+      width: 36px; height: 36px;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s;
+    }
+    .instellingen-btn:hover { background: rgba(255,255,255,.3); }
+
+    /* ── Main layout ── */
+    .main { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+    /* ── Filter kaart ── */
+    .filter-kaart {
+      background: var(--kaart);
+      border-radius: var(--radius);
+      box-shadow: var(--schaduw);
+      padding: 1.75rem;
+      margin-bottom: 2.5rem;
+    }
+    .filter-kaart h2 {
+      font-size: .875rem;
+      font-weight: 700;
+      color: var(--tekst-zacht);
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      margin-bottom: 1.5rem;
+    }
+    .filter-rij { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+    @media (max-width: 600px) { .filter-rij { grid-template-columns: 1fr; } }
+    .filter-sectie { margin-bottom: 1.5rem; }
+    .filter-label {
+      display: block;
+      font-size: .7rem;
+      font-weight: 700;
+      color: var(--tekst-zacht);
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      margin-bottom: .6rem;
+    }
+    .pillen { display: flex; flex-wrap: wrap; gap: .5rem; }
+
+    /* ── Pil ── */
+    .pil {
+      padding: .35rem .85rem;
+      border-radius: 999px;
+      border: none;
+      font-size: .8rem;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all .15s;
+      background: #f3f4f6;
+      color: #374151;
+    }
+    .pil:hover { background: #e5e7eb; }
+    .pil.actief {
+      background: var(--groen);
+      color: var(--wit);
+      box-shadow: 0 0 0 2px var(--groen), 0 0 0 4px rgba(22,163,74,.2);
+    }
+    .pil-sub { opacity: .65; font-size: .72rem; font-weight: 400; margin-left: .2rem; }
+
+    /* ── Personen knoppen ── */
+    .persoon-btn {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      border: none;
+      font-size: .85rem;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      background: #f3f4f6;
+      color: #374151;
+      transition: all .15s;
+    }
+    .persoon-btn:hover { background: #e5e7eb; }
+    .persoon-btn.actief {
+      background: var(--groen);
+      color: var(--wit);
+      box-shadow: 0 0 0 2px var(--groen), 0 0 0 4px rgba(22,163,74,.2);
+    }
+
+    /* ── Genereer knop ── */
+    .genereer-btn {
+      width: 100%;
+      margin-top: 1.5rem;
+      padding: 1rem 1.5rem;
+      background: var(--groen);
+      color: var(--wit);
+      font-size: 1rem;
+      font-weight: 700;
+      font-family: inherit;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .75rem;
+      box-shadow: 0 4px 12px rgba(22,163,74,.35);
+      transition: all .2s;
+    }
+    .genereer-btn:hover:not(:disabled) {
+      background: var(--groen-donker);
+      box-shadow: 0 6px 18px rgba(22,163,74,.4);
+      transform: translateY(-1px);
+    }
+    .genereer-btn:disabled { background: #86efac; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    /* ── Foutmelding ── */
+    .fout-banner {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+      color: #dc2626;
+      font-size: .875rem;
+      display: flex;
+      gap: .75rem;
+    }
+    .fout-banner strong { display: block; margin-bottom: .2rem; }
+
+    /* ── API key melding ── */
+    .key-melding {
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2rem;
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+    .key-melding p { font-size: .875rem; color: #92400e; }
+    .key-melding button {
+      margin-top: .5rem;
+      padding: .35rem .85rem;
+      background: #f59e0b;
+      color: var(--wit);
+      border: none;
+      border-radius: 8px;
+      font-size: .8rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    /* ── Sectie header resultaten ── */
+    .resultaten-header { margin-bottom: 1.5rem; }
+    .resultaten-header h2 { font-size: 1.25rem; font-weight: 800; }
+    .resultaten-header p { font-size: .875rem; color: var(--tekst-zacht); margin-top: .25rem; }
+
+    /* ── Grid ── */
+    .recept-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+    @media (max-width: 640px) { .recept-grid { grid-template-columns: 1fr; } }
+    .recept-5e { max-width: 520px; margin: 1.5rem auto 0; }
+
+    /* ── Skeleton ── */
+    @keyframes schemer { 0%,100%{opacity:1} 50%{opacity:.5} }
+    .skeleton-kaart {
+      background: var(--kaart);
+      border-radius: var(--radius);
+      box-shadow: var(--schaduw);
+      overflow: hidden;
+      animation: schemer 1.4s ease-in-out infinite;
+    }
+    .sk-img { height: 200px; background: #e5e7eb; }
+    .sk-body { padding: 1.25rem; }
+    .sk-lijn { height: 12px; background: #e5e7eb; border-radius: 6px; margin-bottom: .75rem; }
+
+    /* ── Recept kaart ── */
+    .recept-kaart {
+      background: var(--kaart);
+      border-radius: var(--radius);
+      box-shadow: var(--schaduw);
+      overflow: hidden;
+      transition: box-shadow .2s, transform .2s;
+      display: flex;
+      flex-direction: column;
+    }
+    .recept-kaart:hover { box-shadow: var(--schaduw-hover); transform: translateY(-2px); }
+
+    .recept-afbeelding {
+      position: relative;
+      height: 200px;
+      background: linear-gradient(135deg, #d1fae5, #a7f3d0, #6ee7b7);
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    .recept-afbeelding img { width: 100%; height: 100%; object-fit: cover; }
+    .afb-laden {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: .5rem;
+    }
+    .afb-laden span { font-size: .7rem; color: var(--groen); font-weight: 600; }
+    .afb-placeholder {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 3.5rem; opacity: .35;
+    }
+    .moeilijkheid-badge {
+      position: absolute; top: .75rem; left: .75rem;
+      padding: .25rem .65rem;
+      background: rgba(0,0,0,.45);
+      backdrop-filter: blur(4px);
+      color: var(--wit);
+      font-size: .7rem;
+      font-weight: 600;
+      border-radius: 999px;
+    }
+
+    .recept-inhoud { padding: 1.25rem; flex: 1; display: flex; flex-direction: column; }
+    .recept-naam { font-size: 1rem; font-weight: 700; line-height: 1.3; margin-bottom: .4rem; }
+    .recept-desc {
+      font-size: .8rem;
+      color: var(--tekst-zacht);
+      margin-bottom: .9rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .badges { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: 1rem; }
+    .badge {
+      padding: .25rem .65rem;
+      border-radius: 999px;
+      font-size: .72rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .badge-blauw   { background: #eff6ff; color: #1d4ed8; }
+    .badge-oranje  { background: #fff7ed; color: #c2410c; }
+    .badge-groen   { background: var(--groen-pale); color: var(--groen-donker); }
+    .badge-paars   { background: #faf5ff; color: #7e22ce; }
+
+    .tabs { display: flex; border-bottom: 2px solid #f3f4f6; margin-bottom: 1rem; }
+    .tab-btn {
+      flex: 1;
+      padding: .5rem;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      font-size: .8rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      color: var(--tekst-zacht);
+      transition: color .15s, border-color .15s;
+    }
+    .tab-btn.actief { color: var(--groen); border-bottom-color: var(--groen); }
+    .tab-btn:not(.actief):hover { color: var(--tekst); }
+
+    .tab-inhoud { flex: 1; overflow-y: auto; max-height: 260px; padding-right: 4px; font-size: .82rem; }
+    .tab-inhoud::-webkit-scrollbar { width: 4px; }
+    .tab-inhoud::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+
+    .ingredienten { list-style: none; }
+    .ingredienten li { display: flex; gap: .5rem; align-items: flex-start; margin-bottom: .5rem; }
+    .ingredienten li::before { content: '•'; color: var(--groen); flex-shrink: 0; margin-top: 1px; }
+    .ing-hoeveelheid { font-weight: 600; color: var(--tekst); }
+    .ing-naam { color: var(--tekst-zacht); }
+
+    .instructies { list-style: none; }
+    .instructies li { display: flex; gap: .75rem; align-items: flex-start; margin-bottom: .9rem; }
+    .stap-nr {
+      flex-shrink: 0;
+      width: 22px; height: 22px;
+      background: var(--groen);
+      color: var(--wit);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .7rem; font-weight: 700;
+      margin-top: 1px;
+    }
+    .stap-tekst { color: var(--tekst-zacht); line-height: 1.5; }
+
+    /* ── Spinner ── */
+    @keyframes draaien { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2.5px solid rgba(255,255,255,.4);
+      border-top-color: var(--wit);
+      border-radius: 50%;
+      animation: draaien .7s linear infinite;
+      flex-shrink: 0;
+    }
+    .spinner-groen {
+      width: 28px; height: 28px;
+      border: 3px solid var(--groen-mid);
+      border-top-color: var(--groen);
+      border-radius: 50%;
+      animation: draaien .7s linear infinite;
+    }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.5);
+      backdrop-filter: blur(4px);
+      z-index: 200;
+      display: flex; align-items: center; justify-content: center;
+      padding: 1rem;
+    }
+    .modal {
+      background: var(--wit);
+      border-radius: 20px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.2);
+    }
+    .modal h3 { font-size: 1.1rem; font-weight: 800; margin-bottom: .4rem; }
+    .modal p { font-size: .82rem; color: var(--tekst-zacht); margin-bottom: 1.5rem; line-height: 1.5; }
+    .form-groep { margin-bottom: 1.25rem; }
+    .form-label {
+      display: block;
+      font-size: .75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--tekst-zacht);
+      margin-bottom: .4rem;
+    }
+    .form-label span { font-weight: 400; text-transform: none; opacity: .7; letter-spacing: 0; }
+    .form-input {
+      width: 100%;
+      padding: .65rem .85rem;
+      border: 1.5px solid var(--rand);
+      border-radius: 10px;
+      font-size: .85rem;
+      font-family: monospace;
+      color: var(--tekst);
+      transition: border-color .15s;
+      outline: none;
+    }
+    .form-input:focus { border-color: var(--groen); }
+    .modal-acties { display: flex; gap: .75rem; justify-content: flex-end; margin-top: 1.5rem; }
+    .btn-annuleren {
+      padding: .6rem 1.2rem;
+      background: #f3f4f6;
+      border: none;
+      border-radius: 10px;
+      font-size: .875rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      color: var(--tekst-zacht);
+    }
+    .btn-opslaan {
+      padding: .6rem 1.4rem;
+      background: var(--groen);
+      color: var(--wit);
+      border: none;
+      border-radius: 10px;
+      font-size: .875rem;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+    }
+    .btn-opslaan:hover { background: var(--groen-donker); }
+
+    /* ── Footer ── */
+    .footer {
+      text-align: center;
+      padding: 3rem 1rem 2rem;
+      font-size: .75rem;
+      color: #d1d5db;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useRef } = React;
+
+    // ─── Filter opties ───────────────────────────────────────────────────────
+
+    const TIJD_OPTIES = [
+      { id: 'short',  label: 'Snel',    sub: '< 25 min' },
+      { id: 'medium', label: 'Normaal', sub: '25–40 min' },
+      { id: 'long',   label: 'Lang',    sub: '40+ min' },
+    ];
+
+    const KEUKEN_OPTIES = [
+      { id: 'Italiaans',  label: 'Italiaans',  vlag: '🇮🇹' },
+      { id: 'Frans',      label: 'Frans',      vlag: '🇫🇷' },
+      { id: 'Spaans',     label: 'Spaans',     vlag: '🇪🇸' },
+      { id: 'Japans',     label: 'Japans',     vlag: '🇯🇵' },
+      { id: 'Chinees',    label: 'Chinees',    vlag: '🇨🇳' },
+      { id: 'Thais',      label: 'Thais',      vlag: '🇹🇭' },
+      { id: 'Vietnamees', label: 'Vietnamees', vlag: '🇻🇳' },
+      { id: 'Indisch',    label: 'Indisch',    vlag: '🇮🇳' },
+    ];
+
+    const DIEET_OPTIES = [
+      { id: 'vegan',       label: 'Vegan',       icoon: '🌱' },
+      { id: 'vegetarisch', label: 'Vegetarisch', icoon: '🥗' },
+      { id: 'vis',         label: 'Vis',         icoon: '🐟' },
+      { id: 'vlees',       label: 'Vlees',       icoon: '🥩' },
+    ];
+
+    const CALORIE_OPTIES = [
+      { id: 'low_carb', label: 'Low Carb', sub: '< 300 kcal' },
+      { id: 'laag',     label: 'Laag',     sub: '300–400 kcal' },
+      { id: 'middel',   label: 'Middel',   sub: '400–600 kcal' },
+      { id: 'hoog',     label: 'Hoog',     sub: '600+ kcal' },
+    ];
+
+    const CALORIE_LABELS = {
+      low_carb: 'Low Carb (< 300 kcal, weinig koolhydraten)',
+      laag:     'Laag calorie (300–400 kcal per persoon)',
+      middel:   'Middel calorie (400–600 kcal per persoon)',
+      hoog:     'Hoog calorie (600–900 kcal per persoon)',
+    };
+
+    const TIJD_LABELS = {
+      short:  'Snel — minder dan 25 minuten totaal',
+      medium: 'Normaal — 25 tot 40 minuten totaal',
+      long:   'Lang — meer dan 40 minuten totaal',
+    };
+
+    // ─── Componenten ─────────────────────────────────────────────────────────
+
+    function Pil({ actief, onClick, children }) {
+      return (
+        <button
+          type="button"
+          className={`pil ${actief ? 'actief' : ''}`}
+          onClick={onClick}
+        >
+          {children}
+        </button>
+      );
+    }
+
+    function FilterSectie({ label, children }) {
+      return (
+        <div className="filter-sectie">
+          <span className="filter-label">{label}</span>
+          <div className="pillen">{children}</div>
+        </div>
+      );
+    }
+
+    function SkeletonKaart() {
+      return (
+        <div className="skeleton-kaart">
+          <div className="sk-img" />
+          <div className="sk-body">
+            <div className="sk-lijn" style={{ width: '70%' }} />
+            <div className="sk-lijn" style={{ width: '100%' }} />
+            <div className="sk-lijn" style={{ width: '55%' }} />
+            <div style={{ display:'flex', gap:'.5rem', margin:'1rem 0' }}>
+              {[60,60,60,60].map((w,i) => (
+                <div key={i} className="sk-lijn" style={{ width:w, height:20, borderRadius:999, marginBottom:0 }} />
+              ))}
+            </div>
+            {[100,90,80,70,85,75].map((w,i) => (
+              <div key={i} className="sk-lijn" style={{ width:`${w}%`, marginBottom:'.45rem' }} />
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function ReceptKaart({ recept, tab, onTabChange }) {
+      const prijs = typeof recept.price_per_person === 'number'
+        ? recept.price_per_person.toFixed(2)
+        : parseFloat(recept.price_per_person).toFixed(2);
+
+      return (
+        <div className="recept-kaart">
+          {/* Afbeelding */}
+          <div className="recept-afbeelding">
+            {recept.imageUrl
+              ? <img src={recept.imageUrl} alt={recept.name} />
+              : recept.imageLoading
+                ? <div className="afb-laden">
+                    <div className="spinner-groen" />
+                    <span>Afbeelding laden…</span>
+                  </div>
+                : <div className="afb-placeholder">🍽️</div>
+            }
+            {recept.difficulty && (
+              <span className="moeilijkheid-badge">{recept.difficulty}</span>
+            )}
+          </div>
+
+          {/* Inhoud */}
+          <div className="recept-inhoud">
+            <p className="recept-naam">{recept.name}</p>
+            <p className="recept-desc">{recept.description}</p>
+
+            <div className="badges">
+              <span className="badge badge-blauw">⏱ {recept.total_time} min</span>
+              <span className="badge badge-oranje">🔥 {recept.calories_per_person} kcal/p</span>
+              <span className="badge badge-groen">💰 €{prijs}/p</span>
+              <span className="badge badge-paars">👥 {recept.servings} pers.</span>
+            </div>
+
+            {/* Tabs */}
+            <div className="tabs">
+              <button
+                className={`tab-btn ${tab === 'ingredients' ? 'actief' : ''}`}
+                onClick={() => onTabChange('ingredients')}
+              >
+                Ingrediënten
+              </button>
+              <button
+                className={`tab-btn ${tab === 'instructions' ? 'actief' : ''}`}
+                onClick={() => onTabChange('instructions')}
+              >
+                Bereiding
+              </button>
+            </div>
+
+            <div className="tab-inhoud">
+              {tab === 'ingredients' ? (
+                <ul className="ingredienten">
+                  {recept.ingredients.map((ing, i) => (
+                    <li key={i}>
+                      <span className="ing-hoeveelheid">{ing.amount} {ing.unit}</span>
+                      <span className="ing-naam">{ing.item}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <ol className="instructies">
+                  {recept.instructions.map((stap, i) => (
+                    <li key={i}>
+                      <span className="stap-nr">{i + 1}</span>
+                      <span className="stap-tekst">{stap}</span>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function InstellingenModal({ onOpslaan, onSluiten, huidigAnthropicKey, huidigFalKey }) {
+      const [anthropicKey, setAnthropicKey] = useState(huidigAnthropicKey);
+      const [falKey, setFalKey] = useState(huidigFalKey);
+
+      function opslaan() {
+        onOpslaan(anthropicKey.trim(), falKey.trim());
+      }
+
+      return (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onSluiten()}>
+          <div className="modal">
+            <h3>⚙️ API Instellingen</h3>
+            <p>
+              Voer je API keys in. Deze worden lokaal opgeslagen in je browser en nooit gedeeld.
+            </p>
+
+            <div className="form-groep">
+              <label className="form-label">
+                Anthropic API Key <span>(voor recepten — verplicht)</span>
+              </label>
+              <input
+                className="form-input"
+                type="password"
+                placeholder="sk-ant-..."
+                value={anthropicKey}
+                onChange={e => setAnthropicKey(e.target.value)}
+              />
+              <p style={{ fontSize:'.72rem', color:'#9ca3af', marginTop:'.35rem' }}>
+                Aanmaken via <strong>console.anthropic.com</strong>
+              </p>
+            </div>
+
+            <div className="form-groep">
+              <label className="form-label">
+                fal.ai API Key <span>(voor Nano Banana afbeeldingen — optioneel)</span>
+              </label>
+              <input
+                className="form-input"
+                type="password"
+                placeholder="fal-..."
+                value={falKey}
+                onChange={e => setFalKey(e.target.value)}
+              />
+              <p style={{ fontSize:'.72rem', color:'#9ca3af', marginTop:'.35rem' }}>
+                Aanmaken via <strong>fal.ai/dashboard</strong> · Zonder key: geen afbeeldingen
+              </p>
+            </div>
+
+            <div className="modal-acties">
+              <button className="btn-annuleren" onClick={onSluiten}>Annuleren</button>
+              <button className="btn-opslaan" onClick={opslaan} disabled={!anthropicKey.trim()}>
+                Opslaan
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ─── Hoofd App ───────────────────────────────────────────────────────────
+
+    function App() {
+      const [anthropicKey, setAnthropicKey]   = useState(() => localStorage.getItem('rg_anthropic') || '');
+      const [falKey, setFalKey]               = useState(() => localStorage.getItem('rg_fal') || '');
+      const [toonInstellingen, setToonInstellingen] = useState(false);
+
+      const [tijd, setTijd]         = useState('short');
+      const [keuken, setKeuken]     = useState('Italiaans');
+      const [dieet, setDieet]       = useState('vlees');
+      const [calorieen, setCalorieen] = useState('middel');
+      const [personen, setPersonen] = useState(2);
+
+      const [recepten, setRecepten] = useState([]);
+      const [laden, setLaden]       = useState(false);
+      const [fout, setFout]         = useState(null);
+      const [tabs, setTabs]         = useState({});
+
+      const resultatenRef = useRef(null);
+
+      function slaInstellingenOp(ak, fk) {
+        localStorage.setItem('rg_anthropic', ak);
+        localStorage.setItem('rg_fal', fk);
+        setAnthropicKey(ak);
+        setFalKey(fk);
+        setToonInstellingen(false);
+      }
+
+      function bouwPrompt() {
+        return `Je bent een professionele chef-kok. Genereer precies 5 heerlijke en gevarieerde recepten op basis van de volgende criteria:
+
+- Bereidingstijd: ${TIJD_LABELS[tijd]}
+- Keuken: ${keuken}
+- Dieet/voorkeur: ${dieet}
+- Calorieën: ${CALORIE_LABELS[calorieen]}
+- Aantal personen: ${personen}
+
+STRIKTE REGELS:
+1. Gebruik UITSLUITEND ingrediënten van Albert Heijn of Jumbo supermarkten in Nederland
+2. Alle prijzen in EUR, realistisch voor Nederlandse supermarktprijzen
+3. Totale bereidingstijd MOET kloppen met het gevraagde tijdsframe
+4. Calorieën per persoon MOET kloppen met de gevraagde categorie
+5. Alles in het NEDERLANDS: ingrediëntnamen, instructies, receptnamen
+6. De 5 recepten moeten onderling gevarieerd zijn
+7. Ingrediënthoeveelheden zijn voor ${personen} ${personen === 1 ? 'persoon' : 'personen'}
+
+Geef ALLEEN valid JSON terug, zonder markdown of uitleg:
+
+{
+  "recipes": [
+    {
+      "id": 1,
+      "name": "Naam",
+      "description": "Beschrijving van 1-2 zinnen",
+      "prep_time": 10,
+      "cook_time": 15,
+      "total_time": 25,
+      "difficulty": "Makkelijk",
+      "calories_per_person": 420,
+      "price_per_person": 3.50,
+      "servings": ${personen},
+      "ingredients": [
+        {"amount": "400", "unit": "g", "item": "kipfilet"}
+      ],
+      "instructions": ["Stap 1...", "Stap 2..."],
+      "image_prompt": "Professional food photography of [dish], [cuisine] style, white plate, restaurant quality"
+    }
+  ]
+}`;
+      }
+
+      async function genereerRecepten() {
+        if (!anthropicKey) {
+          setToonInstellingen(true);
+          return;
+        }
+
+        setLaden(true);
+        setFout(null);
+        setRecepten([]);
+
+        try {
+          // ── Claude API aanroepen ──────────────────────────────────────────
+          const res = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': anthropicKey,
+              'anthropic-version': '2023-06-01',
+              'anthropic-dangerous-direct-browser-access': 'true',
+            },
+            body: JSON.stringify({
+              model: 'claude-opus-4-6',
+              max_tokens: 6000,
+              messages: [{ role: 'user', content: bouwPrompt() }],
+            }),
+          });
+
+          if (!res.ok) {
+            const foutData = await res.json().catch(() => ({}));
+            const status = res.status;
+            if (status === 401) throw new Error('Ongeldige Anthropic API key. Controleer je sleutel in de instellingen.');
+            if (status === 429) throw new Error('Te veel verzoeken. Wacht even en probeer opnieuw.');
+            throw new Error(foutData.error?.message || `API fout: ${status}`);
+          }
+
+          const data = await res.json();
+          const tekstBlok = data.content.find(b => b.type === 'text');
+          if (!tekstBlok) throw new Error('Geen antwoord ontvangen van de AI.');
+
+          let jsonTekst = tekstBlok.text.trim()
+            .replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
+
+          const parsed = JSON.parse(jsonTekst);
+          if (!parsed.recipes) throw new Error('Ongeldig antwoord formaat.');
+
+          const metState = parsed.recipes.map(r => ({ ...r, imageUrl: null, imageLoading: !!falKey }));
+          setRecepten(metState);
+          setTabs(Object.fromEntries(parsed.recipes.map(r => [r.id, 'ingredients'])));
+          setLaden(false);
+
+          setTimeout(() => {
+            resultatenRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 100);
+
+          // ── Afbeeldingen genereren met Nano Banana via fal.ai (parallel) ──
+          if (falKey) {
+            parsed.recipes.forEach(async recept => {
+              try {
+                const imgRes = await fetch('https://api.fal.ai/fal-ai/nano-banana-2', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Key ${falKey}`,
+                  },
+                  body: JSON.stringify({
+                    prompt: `${recept.image_prompt}. Overhead shot, clean white ceramic plate, beautifully garnished, professional food styling, warm natural light, photorealistic, appetizing.`,
+                    resolution: '1K',
+                    aspect_ratio: '1:1',
+                    output_format: 'jpeg',
+                    num_images: 1,
+                  }),
+                });
+                if (imgRes.ok) {
+                  const imgData = await imgRes.json();
+                  const url = imgData.images?.[0]?.url;
+                  if (url) {
+                    setRecepten(prev => prev.map(r =>
+                      r.id === recept.id ? { ...r, imageUrl: url, imageLoading: false } : r
+                    ));
+                  } else {
+                    setRecepten(prev => prev.map(r =>
+                      r.id === recept.id ? { ...r, imageLoading: false } : r
+                    ));
+                  }
+                } else {
+                  setRecepten(prev => prev.map(r =>
+                    r.id === recept.id ? { ...r, imageLoading: false } : r
+                  ));
+                }
+              } catch {
+                setRecepten(prev => prev.map(r =>
+                  r.id === recept.id ? { ...r, imageLoading: false } : r
+                ));
+              }
+            });
+          }
+
+        } catch (err) {
+          console.error(err);
+          setFout(err.message);
+          setLaden(false);
+        }
+      }
+
+      const dieetLabel   = DIEET_OPTIES.find(d => d.id === dieet)?.label ?? dieet;
+      const calorieLabel = CALORIE_OPTIES.find(c => c.id === calorieen)?.label ?? calorieen;
+
+      return (
+        <div>
+          {/* ── Header ── */}
+          <header className="header">
+            <div>
+              <div className="header-titel">🍽️ Recepten Generator</div>
+              <div className="header-sub">Ingrediënten van Albert Heijn &amp; Jumbo</div>
+            </div>
+            <button
+              className="instellingen-btn"
+              onClick={() => setToonInstellingen(true)}
+              title="API instellingen"
+            >
+              ⚙️
+            </button>
+          </header>
+
+          <main className="main">
+
+            {/* ── Geen API key melding ── */}
+            {!anthropicKey && (
+              <div className="key-melding">
+                <span style={{ fontSize:'1.5rem' }}>🔑</span>
+                <div>
+                  <p><strong>API key vereist</strong><br />
+                  Voeg je Anthropic API key toe om recepten te genereren.</p>
+                  <button onClick={() => setToonInstellingen(true)}>Instellingen openen</button>
+                </div>
+              </div>
+            )}
+
+            {/* ── Filter kaart ── */}
+            <div className="filter-kaart">
+              <h2>Stel je voorkeuren in</h2>
+
+              <div className="filter-rij">
+                <FilterSectie label="Bereidingstijd">
+                  {TIJD_OPTIES.map(opt => (
+                    <Pil key={opt.id} actief={tijd === opt.id} onClick={() => setTijd(opt.id)}>
+                      {opt.label}<span className="pil-sub">{opt.sub}</span>
+                    </Pil>
+                  ))}
+                </FilterSectie>
+
+                <FilterSectie label="Dieet">
+                  {DIEET_OPTIES.map(opt => (
+                    <Pil key={opt.id} actief={dieet === opt.id} onClick={() => setDieet(opt.id)}>
+                      {opt.icoon} {opt.label}
+                    </Pil>
+                  ))}
+                </FilterSectie>
+              </div>
+
+              <FilterSectie label="Keuken">
+                {KEUKEN_OPTIES.map(opt => (
+                  <Pil key={opt.id} actief={keuken === opt.id} onClick={() => setKeuken(opt.id)}>
+                    {opt.vlag} {opt.label}
+                  </Pil>
+                ))}
+              </FilterSectie>
+
+              <div className="filter-rij">
+                <FilterSectie label="Calorieën">
+                  {CALORIE_OPTIES.map(opt => (
+                    <Pil key={opt.id} actief={calorieen === opt.id} onClick={() => setCalorieen(opt.id)}>
+                      {opt.label}<span className="pil-sub">{opt.sub}</span>
+                    </Pil>
+                  ))}
+                </FilterSectie>
+
+                <FilterSectie label="Aantal personen">
+                  <div className="pillen">
+                    {[1,2,3,4,5,6,7,8].map(n => (
+                      <button
+                        key={n}
+                        type="button"
+                        className={`persoon-btn ${personen === n ? 'actief' : ''}`}
+                        onClick={() => setPersonen(n)}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                </FilterSectie>
+              </div>
+
+              <button
+                className="genereer-btn"
+                onClick={genereerRecepten}
+                disabled={laden}
+              >
+                {laden ? (
+                  <>
+                    <div className="spinner" />
+                    Recepten worden gegenereerd…
+                  </>
+                ) : (
+                  <>✨ Genereer 5 Recepten</>
+                )}
+              </button>
+            </div>
+
+            {/* ── Foutmelding ── */}
+            {fout && (
+              <div className="fout-banner">
+                <span style={{ fontSize:'1.25rem' }}>⚠️</span>
+                <div>
+                  <strong>Er is iets misgegaan</strong>
+                  {fout}
+                </div>
+              </div>
+            )}
+
+            {/* ── Resultaten ── */}
+            <div ref={resultatenRef}>
+              {laden && (
+                <div>
+                  <div className="resultaten-header">
+                    <div style={{ height:22, background:'#e5e7eb', borderRadius:8, width:200, animation:'schemer 1.4s infinite' }} />
+                  </div>
+                  <div className="recept-grid">
+                    {[1,2,3,4].map(i => <SkeletonKaart key={i} />)}
+                  </div>
+                  <div className="recept-5e"><SkeletonKaart /></div>
+                </div>
+              )}
+
+              {!laden && recepten.length > 0 && (
+                <div>
+                  <div className="resultaten-header">
+                    <h2>Jouw recepten</h2>
+                    <p>{keuken} · {dieetLabel} · {calorieLabel} · {personen} {personen === 1 ? 'persoon' : 'personen'}</p>
+                  </div>
+
+                  <div className="recept-grid">
+                    {recepten.slice(0, 4).map(recept => (
+                      <ReceptKaart
+                        key={recept.id}
+                        recept={recept}
+                        tab={tabs[recept.id] || 'ingredients'}
+                        onTabChange={t => setTabs(prev => ({ ...prev, [recept.id]: t }))}
+                      />
+                    ))}
+                  </div>
+
+                  {recepten[4] && (
+                    <div className="recept-5e">
+                      <ReceptKaart
+                        recept={recepten[4]}
+                        tab={tabs[recepten[4].id] || 'ingredients'}
+                        onTabChange={t => setTabs(prev => ({ ...prev, [recepten[4].id]: t }))}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+          </main>
+
+          <footer className="footer">
+            Recepten gegenereerd met Claude AI · Ingrediënten van Albert Heijn &amp; Jumbo · Afbeeldingen door Nano Banana (fal.ai)
+          </footer>
+
+          {/* ── Instellingen modal ── */}
+          {toonInstellingen && (
+            <InstellingenModal
+              huidigAnthropicKey={anthropicKey}
+              huidigFalKey={falKey}
+              onOpslaan={slaInstellingenOp}
+              onSluiten={() => setToonInstellingen(false)}
+            />
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
