@@ -80,7 +80,7 @@ ANTWOORD UITSLUITEND met valid JSON, geen markdown, geen code blocks, geen uitle
 
     const stream = client.messages.stream({
       model: 'claude-opus-4-6',
-      max_tokens: 6000,
+      max_tokens: 16000,
       messages: [{ role: 'user', content: prompt }],
     })
 
