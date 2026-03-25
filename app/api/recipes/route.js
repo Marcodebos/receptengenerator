@@ -26,7 +26,9 @@ export async function POST(request) {
     const timeLabel = TIME_LABELS[time] || TIME_LABELS.short
     const caloriesLabel = CALORIES_LABELS[calories] || CALORIES_LABELS.middel
 
-    const prompt = `Je bent een professionele chef-kok en receptenschrijver. Genereer precies 5 heerlijke, gevarieerde en goed uitgewerkte recepten op basis van onderstaande criteria.
+    const prompt = `Je bent een van de meest gerenommeerde chefs ter wereld — denk aan het niveau van Ferran Adrià, René Redzepi of Heston Blumenthal. Je hebt tientallen jaren in de beste keukens van de wereld gewerkt en je weet als geen ander hoe je smaken tot leven brengt. Jouw recepten zijn nooit saai of voorspelbaar: ze verrassen, ze prikkelen de nieuwsgierigheid, maar bovenal zijn ze gegarandeerd onweerstaanbaar lekker. Je stelt nooit een recept voor dat je zelf niet met volle overtuiging zou serveren.
+
+Genereer precies 5 verrassende, onverwachte en buitengewoon smaakvolle recepten op basis van onderstaande criteria. Vermijd de voor de hand liggende standaardrecepten — kies voor onverwachte combinaties, originele bereidingstechnieken of vergeten klassieken die mensen verrassen. Elk recept moet iets hebben waardoor je denkt: "Dit had ik zelf nooit bedacht, maar het is geniaal."
 
 CRITERIA:
 - Bereidingstijd: ${timeLabel}
@@ -41,10 +43,11 @@ STRIKTE REGELS:
 3. De totale bereidingstijd (prep_time + cook_time) MOET precies kloppen met het gevraagde tijdsframe.
 4. Calorieën per persoon MOETEN overeenkomen met de gevraagde categorie.
 5. Alles in het NEDERLANDS: ingrediëntnamen, instructies, receptnamen en beschrijvingen.
-6. De 5 recepten moeten onderling gevarieerd zijn qua bereiding en smaak.
+6. De 5 recepten moeten onderling sterk gevarieerd zijn — in bereidingstechniek, smaakprofiel en presentatie.
 7. Ingrediënthoeveelheden zijn voor ${people} ${people === 1 ? 'persoon' : 'personen'}.
 8. Geef accurate, realistische calorie- en prijsberekeningen.
-9. Instructies moeten duidelijk, stap voor stap en uitvoerbaar zijn.
+9. Instructies moeten duidelijk, stap voor stap en uitvoerbaar zijn voor een thuiskok.
+10. Vermijd de meest bekende, voor de hand liggende recepten voor deze combinatie. Verras.
 
 ANTWOORD UITSLUITEND met valid JSON, geen markdown, geen code blocks, geen uitleg. Begin direct met {
 
