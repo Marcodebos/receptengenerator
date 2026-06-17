@@ -224,10 +224,59 @@ export default function Home() {
     setTabs(prev => ({ ...prev, [recipeId]: tab }))
   }
 
+  // Genereer de afbeelding voor één recept op de achtergrond
+  async function generateImage(recipe) {
+    try {
+      const imgRes = await fetch('/api/image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipeName: recipe.name,
+          imagePrompt: recipe.image_prompt,
+        }),
+      })
+
+      if (imgRes.ok) {
+        const { url } = await imgRes.json()
+        setRecipes(prev =>
+          prev.map(r =>
+            r.id === recipe.id ? { ...r, imageUrl: url, imageLoading: false } : r
+          )
+        )
+      } else {
+        setRecipes(prev =>
+          prev.map(r => (r.id === recipe.id ? { ...r, imageLoading: false } : r))
+        )
+      }
+    } catch {
+      setRecipes(prev =>
+        prev.map(r => (r.id === recipe.id ? { ...r, imageLoading: false } : r))
+      )
+    }
+  }
+
   async function handleGenerate() {
     setLoading(true)
     setError(null)
     setRecipes([])
+    setTabs({})
+
+    let firstArrived = false
+
+    // Verwerk één binnengekomen recept: toon de kaart + start de afbeelding
+    function handleRecipe(recipe) {
+      setRecipes(prev => [...prev, { ...recipe, imageUrl: null, imageLoading: true }])
+      setTabs(prev => ({ ...prev, [recipe.id]: 'ingredients' }))
+
+      if (!firstArrived) {
+        firstArrived = true
+        setTimeout(() => {
+          resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }, 150)
+      }
+
+      generateImage(recipe)
+    }
 
     try {
       const res = await fetch('/api/recipes', {
@@ -236,60 +285,32 @@ export default function Home() {
         body: JSON.stringify({ time, cuisine, diet, calories, people }),
       })
 
-      if (!res.ok) {
-        const data = await res.json()
+      if (!res.ok || !res.body) {
+        const data = await res.json().catch(() => ({}))
         throw new Error(data.error || `HTTP ${res.status}`)
       }
 
-      const data = await res.json()
+      // Lees de NDJSON-stream: elk recept verschijnt zodra het binnen is
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buf = ''
 
-      const withState = data.recipes.map(r => ({
-        ...r,
-        imageUrl: null,
-        imageLoading: true,
-      }))
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buf += decoder.decode(value, { stream: true })
 
-      setRecipes(withState)
-      setTabs(Object.fromEntries(data.recipes.map(r => [r.id, 'ingredients'])))
+        let nl
+        while ((nl = buf.indexOf('\n')) !== -1) {
+          const line = buf.slice(0, nl).trim()
+          buf = buf.slice(nl + 1)
+          if (!line) continue
 
-      setTimeout(() => {
-        resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 150)
-
-      // Genereer afbeeldingen parallel op de achtergrond
-      data.recipes.forEach(async recipe => {
-        try {
-          const imgRes = await fetch('/api/image', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              recipeName: recipe.name,
-              imagePrompt: recipe.image_prompt,
-            }),
-          })
-
-          if (imgRes.ok) {
-            const { url } = await imgRes.json()
-            setRecipes(prev =>
-              prev.map(r =>
-                r.id === recipe.id ? { ...r, imageUrl: url, imageLoading: false } : r
-              )
-            )
-          } else {
-            setRecipes(prev =>
-              prev.map(r =>
-                r.id === recipe.id ? { ...r, imageLoading: false } : r
-              )
-            )
-          }
-        } catch {
-          setRecipes(prev =>
-            prev.map(r =>
-              r.id === recipe.id ? { ...r, imageLoading: false } : r
-            )
-          )
+          const obj = JSON.parse(line)
+          if (obj.error) throw new Error(obj.error)
+          handleRecipe(obj)
         }
-      })
+      }
     } catch (err) {
       console.error(err)
       setError(err.message)
@@ -300,6 +321,9 @@ export default function Home() {
 
   const dietLabel = DIET_OPTIONS.find(d => d.id === diet)?.label ?? diet
   const calLabel = CALORIES_OPTIONS.find(c => c.id === calories)?.label ?? calories
+
+  // 5 vaste plekken: gevuld met binnengekomen recepten, de rest blijft skeleton
+  const slots = Array.from({ length: 5 }, (_, i) => recipes[i] || null)
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 via-white to-emerald-50">
@@ -422,46 +446,45 @@ export default function Home() {
 
         {/* ── Resultaten ── */}
         <div ref={resultsRef}>
-          {loading && (
-            <div>
-              <div className="mb-6">
-                <div className="h-6 bg-gray-200 rounded-lg w-48 animate-pulse" />
-              </div>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[1, 2, 3, 4, 5].map(i => <SkeletonCard key={i} />)}
-              </div>
-            </div>
-          )}
-
-          {!loading && recipes.length > 0 && (
+          {(loading || recipes.length > 0) && (
             <div>
               {/* Sectie header */}
               <div className="mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Jouw recepten</h2>
+                <h2 className="text-xl font-bold text-gray-900">
+                  {recipes.length > 0 ? 'Jouw recepten' : 'Recepten worden gegenereerd…'}
+                </h2>
                 <p className="text-sm text-gray-400 mt-1">
                   {cuisine} &middot; {dietLabel} &middot; {calLabel} calorie &middot; {people} {people === 1 ? 'persoon' : 'personen'}
                 </p>
               </div>
 
-              {/* Receptkaarten grid — 2 kolommen, 5e kaart gecentreerd */}
+              {/* Receptkaarten grid — recepten verschijnen kaart-per-kaart, skeletons voor de rest */}
               <div className="grid sm:grid-cols-2 gap-6">
-                {recipes.slice(0, 4).map(recipe => (
-                  <RecipeCard
-                    key={recipe.id}
-                    recipe={recipe}
-                    tab={tabs[recipe.id] || 'ingredients'}
-                    onTabChange={tab => setTab(recipe.id, tab)}
-                  />
-                ))}
+                {slots.slice(0, 4).map((recipe, i) =>
+                  recipe ? (
+                    <RecipeCard
+                      key={recipe.id}
+                      recipe={recipe}
+                      tab={tabs[recipe.id] || 'ingredients'}
+                      onTabChange={tab => setTab(recipe.id, tab)}
+                    />
+                  ) : loading ? (
+                    <SkeletonCard key={`skeleton-${i}`} />
+                  ) : null
+                )}
               </div>
 
-              {recipes[4] && (
+              {(slots[4] || loading) && (
                 <div className="mt-6 sm:max-w-md sm:mx-auto">
-                  <RecipeCard
-                    recipe={recipes[4]}
-                    tab={tabs[recipes[4].id] || 'ingredients'}
-                    onTabChange={tab => setTab(recipes[4].id, tab)}
-                  />
+                  {slots[4] ? (
+                    <RecipeCard
+                      recipe={slots[4]}
+                      tab={tabs[slots[4].id] || 'ingredients'}
+                      onTabChange={tab => setTab(slots[4].id, tab)}
+                    />
+                  ) : loading ? (
+                    <SkeletonCard />
+                  ) : null}
                 </div>
               )}
             </div>
